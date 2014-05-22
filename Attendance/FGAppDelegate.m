@@ -87,7 +87,21 @@
             NSPredicate *predicate = [NSPredicate predicateWithFormat:@"date == %@",date];
             NSArray *arriveTimeResults = [personArr filteredArrayUsingPredicate: predicate];
             
-            NSLog(@"%@",arriveTimeResults);
+            NSArray *timeResults = [arriveTimeResults valueForKeyPath:@"@distinctUnionOfObjects.arriveTime"];
+            NSArray *sortTimeArray = [timeResults sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2)
+            {
+                
+                NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+                [formatter setDateFormat:@"YYYY-m-d h:mm"];
+                NSDate *date1 = [formatter dateFromString:[NSString stringWithFormat:@"%@ %@",date,obj1]];
+                NSDate *date2 = [formatter dateFromString:[NSString stringWithFormat:@"%@ %@",date,obj2]];
+                
+                NSComparisonResult result = [date1 isEqualToDate:date2];
+                
+                return result == NSOrderedDescending; // 升序
+            }];
+            
+            NSLog(@"%@",sortTimeArray);
         }
     }
 }
