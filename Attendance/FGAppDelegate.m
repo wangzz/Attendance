@@ -76,12 +76,21 @@
 
 - (void)formatAttendanceDaceWith:(NSArray *)arr
 {
-    NSArray *results = [arr valueForKeyPath:@"@distinctUnionOfObjects.name"];
-    
-    NSLog(@"results:%@",results);
+    //获取全部姓名数组
+    NSArray *nameResults = [arr valueForKeyPath:@"@distinctUnionOfObjects.name"];
+    for (NSString *name in nameResults) {
+        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"name == %@",name];
+        NSArray *personArr = [arr filteredArrayUsingPredicate: predicate];
+        NSArray *dateResults = [personArr valueForKeyPath:@"@distinctUnionOfObjects.date"];
+        
+        for (NSString *date in dateResults) {
+            NSPredicate *predicate = [NSPredicate predicateWithFormat:@"date == %@",date];
+            NSArray *arriveTimeResults = [personArr filteredArrayUsingPredicate: predicate];
+            
+            NSLog(@"%@",arriveTimeResults);
+        }
+    }
 }
-
-
 
 - (BOOL)writeToCSVFile:(NSArray *)arr
 {
