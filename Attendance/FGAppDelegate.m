@@ -21,13 +21,13 @@
 {
     NSArray  *attendanceArr = [self readFile];
     
+    [self formatAttendanceStatus:attendanceArr];
+    
     BOOL result = NO;
     result = [self writeToCSVFile:attendanceArr];
     if (!result) {
         NSLog(@"write to file error.");
     }
-    
-    [self formatAttendanceDaceWith:attendanceArr];
 }
 
 - (NSArray *)readFile
@@ -49,30 +49,94 @@
         if (currentContentArr.count < 5) {
             continue;
         }
-        
-        FGPerson *person = [[FGPerson alloc] init];
-        
-        person.ID = [currentContentArr objectAtIndex:0];
-        
-        person.employeeID = [currentContentArr objectAtIndex:1];
-        
-        person.name = [currentContentArr objectAtIndex:2];
-        
-        person.date = [currentContentArr objectAtIndex:3];
-        
-        person.arriveTime = [currentContentArr objectAtIndex:4];
-        
-        if (person.name == nil || person.name.length == 0) {
-            NSLog(@"err");
+    
+        NSString *name = [currentContentArr objectAtIndex:2];   //姓名
+        NSString *date = [currentContentArr objectAtIndex:3];   //日期
+        NSString *time = [currentContentArr objectAtIndex:4];   //打卡时间
+        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"name == %@ and date == %@",name,date];
+        NSArray *personArr = [attendanceArr filteredArrayUsingPredicate: predicate];
+        if (personArr && personArr.count == 1) {
+            FGPerson *person = [personArr objectAtIndex:0];
+            NSMutableArray *timeArr = (NSMutableArray *)person.timeArray;
+            [timeArr addObject:time];
         } else {
-            [attendanceArr addObject:person];
+            FGPerson *person = [[FGPerson alloc] init];
+            person.ID = [currentContentArr objectAtIndex:0];
+            person.employeeID = [currentContentArr objectAtIndex:1];
+            person.name = name;
+            person.date = date;
+            person.timeArray = [NSMutableArray arrayWithObject:time];
+            
+            if (person.name == nil || person.name.length == 0) {
+//                NSLog(@"err");
+            } else {
+                [attendanceArr addObject:person];
+            }
         }
-        
     }
     
     return attendanceArr;
 }
 
+- (void)formatAttendanceStatus:(NSArray *)arr
+{
+    for (id object in arr) {
+        if (object == nil || ![object isKindOfClass:[FGPerson class]]) {
+            continue;
+        }
+        
+        FGPerson *person = (FGPerson *)object;
+        NSString *firstTime = person.timeArray.firstObject;
+        NSString *lastTime = person.timeArray.lastObject;
+        
+        NSString *normalComeTimeString = @"9:00";   //正常上班时间
+        NSString *normalLeveTimeString = @"18:30";  //正常下班时间
+        NSString *seperateTimeString = @"5:00";     //5点之前的打卡时间算成前一天打卡记录，之后的算成当天打卡记录
+        NSString *overTimeString = @"21:00";        //21点之后的有餐补
+        
+        //早上打卡时间在5点-9点，晚上打卡时间在18：30到21点的属于正常考勤
+        if ([self comparisonString1:firstTime string2:seperateTimeString] == NSOrderedDescending &&
+            [self comparisonString1:firstTime string2:normalComeTimeString] == NSOrderedAscending &&
+            [self comparisonString1:lastTime string2:normalLeveTimeString] == NSOrderedDescending &&
+            [self comparisonString1:lastTime string2:overTimeString] == NSOrderedAscending) {
+            person.status = FGAttendanceStatusNormal;
+            
+            person.arriveTime = firstTime;
+            person.leaveTime = lastTime;
+            
+        } else {
+            person.status = FGAttendanceStatusUnknow;
+        }
+    }
+}
+
+- (NSComparisonResult)comparisonTimeString1:(NSString *)timeString1 timeString2:(NSString *)timeString2
+{
+    NSArray *timeArr1 = [timeString1 componentsSeparatedByString:@":"];
+    NSArray *timeArr2 = [timeString2 componentsSeparatedByString:@":"];
+    
+    if (timeArr1.count != 2 || timeArr2.count != 2) {
+        return NSNotFound;
+    }
+    
+    NSComparisonResult result = [self comparisonString1:timeArr1.firstObject string2:timeArr2.firstObject];
+    if (result != NSOrderedSame) {
+        return result;
+    } else {
+        return [self comparisonString1:timeArr1.lastObject string2:timeArr2.lastObject];
+    }
+}
+
+- (NSComparisonResult)comparisonString1:(NSString *)string1 string2:(NSString *)string2
+{
+    if ([string1 integerValue] > [string2 integerValue]) {
+        return NSOrderedDescending;
+    } else if ([string1 integerValue] < [string2 integerValue]) {
+        return NSOrderedAscending;
+    } else {
+        return NSOrderedSame;
+    }
+}
 
 - (void)formatAttendanceDaceWith:(NSArray *)arr
 {
@@ -108,15 +172,21 @@
 
 - (BOOL)writeToCSVFile:(NSArray *)arr
 {
-    NSString *path = @"/Users/wangzz/Desktop/000.csv";
-    NSMutableData *data = [NSMutableData data];
+    NSString *normalPath = @"/Users/wangzz/Desktop/normal.csv";
+    NSString *unNormalPath = @"/Users/wangzz/Desktop/normal_un.csv";
+    NSMutableData *normalData = [NSMutableData data];
+    NSMutableData *unNormalData = [NSMutableData data];
     for (FGPerson *person in arr) {
-        NSString *string = [NSString stringWithFormat:@"%@\t%@\t%@\t%@\n",person.ID,person.employeeID,person.name,person.arriveTime];
-//        NSLog(@"%@",string);
-        [data appendData:[string dataUsingEncoding:NSUTF16StringEncoding]];
+        NSString *string = [NSString stringWithFormat:@"%@\t%@\t%@\t%@\t%@\n",person.ID,person.employeeID,person.name,person.arriveTime,person.leaveTime];
+        if (person.status == FGAttendanceStatusNormal) {
+            [normalData appendData:[string dataUsingEncoding:NSUTF16StringEncoding]];
+        } else {
+            [unNormalData appendData:[string dataUsingEncoding:NSUTF16StringEncoding]];
+        }
     }
     
-    return [data writeToFile:path atomically:YES];
+    [normalData writeToFile:normalPath atomically:YES];
+    return [unNormalData writeToFile:unNormalPath atomically:YES];
 }
 
 

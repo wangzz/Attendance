@@ -29,6 +29,8 @@ typedef NS_ENUM(NSInteger, FGAttendanceStatus)
 
 @property (nonatomic, copy) NSString                *date;              //签到日期
 
+@property (nonatomic, strong) NSArray               *timeArray;         //签到时间数组
+
 @property (nonatomic, copy) NSString                *arriveTime;        //签到时间
 
 @property (nonatomic, copy) NSString                *leaveTime;         //签退时间

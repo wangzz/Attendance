@@ -12,7 +12,7 @@
 
 - (NSString *)description
 {
-    NSString *des = [NSString stringWithFormat:@"ID:%@   employeeID:%@   name:%@   date:%@   arriveTime:%@   leaveTime:%@   status:%ld",_ID,_employeeID,_name,_date,_arriveTime,_leaveTime,_status];
+    NSString *des = [NSString stringWithFormat:@"ID:%@   employeeID:%@   name:%@   date:%@   timeArray:%@   arriveTime:%@   leaveTime:%@   status:%ld",_ID,_employeeID,_name,_date,_timeArray,_arriveTime,_leaveTime,_status];
     
     return des;
 }
