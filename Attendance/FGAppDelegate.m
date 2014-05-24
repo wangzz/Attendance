@@ -119,13 +119,38 @@
         return NSNotFound;
     }
     
-    NSComparisonResult result = [self comparisonString1:timeArr1.firstObject string2:timeArr2.firstObject];
+    NSComparisonResult result = [timeArr1.firstObject compare:timeArr2.firstObject];
     if (result != NSOrderedSame) {
         return result;
     } else {
-        return [self comparisonString1:timeArr1.lastObject string2:timeArr2.lastObject];
+        return [timeArr1.lastObject compare:timeArr2.lastObject];
     }
 }
+
+- (BOOL)writeToCSVFile:(NSArray *)arr
+{
+    NSString *normalPath = @"/Users/wangzz/Desktop/normal.csv";
+    NSString *unNormalPath = @"/Users/wangzz/Desktop/normal_un.csv";
+    NSMutableData *normalData = [NSMutableData data];
+    NSMutableData *unNormalData = [NSMutableData data];
+    
+    //初始化题头
+    [normalData appendData:[@"登记号码\t工号\t姓名\t出勤日期\t签到时间\t签退时间\n" dataUsingEncoding:NSUTF16StringEncoding]];
+    
+    for (FGPerson *person in arr) {
+        NSString *string = [NSString stringWithFormat:@"%@\t%@\t%@\t%@\t%@\t%@\n",person.ID,person.employeeID,person.name,person.date,person.arriveTime,person.leaveTime];
+        if (person.status == FGAttendanceStatusNormal) {
+            [normalData appendData:[string dataUsingEncoding:NSUTF16StringEncoding]];
+        } else {
+            [unNormalData appendData:[string dataUsingEncoding:NSUTF16StringEncoding]];
+        }
+    }
+    
+    [normalData writeToFile:normalPath atomically:YES];
+    return [unNormalData writeToFile:unNormalPath atomically:YES];
+}
+
+
 
 - (NSComparisonResult)comparisonString1:(NSString *)string1 string2:(NSString *)string2
 {
@@ -169,26 +194,6 @@
         }
     }
 }
-
-- (BOOL)writeToCSVFile:(NSArray *)arr
-{
-    NSString *normalPath = @"/Users/wangzz/Desktop/normal.csv";
-    NSString *unNormalPath = @"/Users/wangzz/Desktop/normal_un.csv";
-    NSMutableData *normalData = [NSMutableData data];
-    NSMutableData *unNormalData = [NSMutableData data];
-    for (FGPerson *person in arr) {
-        NSString *string = [NSString stringWithFormat:@"%@\t%@\t%@\t%@\t%@\n",person.ID,person.employeeID,person.name,person.arriveTime,person.leaveTime];
-        if (person.status == FGAttendanceStatusNormal) {
-            [normalData appendData:[string dataUsingEncoding:NSUTF16StringEncoding]];
-        } else {
-            [unNormalData appendData:[string dataUsingEncoding:NSUTF16StringEncoding]];
-        }
-    }
-    
-    [normalData writeToFile:normalPath atomically:YES];
-    return [unNormalData writeToFile:unNormalPath atomically:YES];
-}
-
 
 
 
