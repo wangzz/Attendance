@@ -9,12 +9,7 @@
 #import <Cocoa/Cocoa.h>
 
 @interface FGAppDelegate : NSObject <NSApplicationDelegate>
-{
-    IBOutlet NSButton *_button;
-}
 
 @property (assign) IBOutlet NSWindow *window;
-
-- (IBAction)onLoadDataButtonAction:(id)sender;
 
 @end

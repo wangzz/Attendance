@@ -9,6 +9,22 @@
 #import "FGAppDelegate.h"
 #import "FGPerson.h"
 
+//导出的文件路径
+#define EXPORT_PATH     @"/Users/wangzz/Desktop/detail_result.csv"
+
+@interface FGAppDelegate ()
+{
+    IBOutlet NSTextView *_textView;
+    
+    NSURL *_originFileUrl;
+    NSURL *_exportFileUrl;
+}
+
+- (IBAction)onSelectDateFileButtonAction:(id)sender;
+- (IBAction)onSelectModuleFileButtonAction:(id)sender;
+- (IBAction)onCreateDataButtonAction:(id)sender;
+
+@end
 
 @implementation FGAppDelegate
 
@@ -17,26 +33,91 @@
     // Insert code here to initialize your application
 }
 
-- (IBAction)onLoadDataButtonAction:(id)sender
+#pragma mark - Button Action
+- (IBAction)onSelectDateFileButtonAction:(id)sender
 {
-    NSArray  *attendanceArr = [self readFile];
+    NSOpenPanel *panel = [NSOpenPanel openPanel];
+    [panel setPrompt: @"Select"];
+    [panel beginSheetModalForWindow:_window completionHandler:^(NSInteger result)
+    {
+        if (result == NSFileHandlingPanelOKButton) {
+            _originFileUrl = [panel URL];
+            
+            NSString *selectFile = [NSString stringWithFormat:@"已选择数据文件：%@",[_originFileUrl absoluteString]];
+            [_textView insertText:[self timestampStringWithString:selectFile]];
+        } else if (result == NSFileHandlingPanelCancelButton) {
+            [_textView insertText:[self timestampStringWithString:@"数据文件选择已取消"]];
+        }
+    }];
+}
+
+- (IBAction)onSelectModuleFileButtonAction:(id)sender
+{
+    NSOpenPanel *panel = [NSOpenPanel openPanel];
+    [panel setPrompt: @"Select"];
+    [panel beginSheetModalForWindow:_window completionHandler:^(NSInteger result)
+     {
+         if (result == NSFileHandlingPanelOKButton) {
+             _exportFileUrl = [panel URL];
+             
+             NSString *selectFile = [NSString stringWithFormat:@"已选择模板文件：%@",[_exportFileUrl absoluteString]];
+             [_textView insertText:[self timestampStringWithString:selectFile]];
+         } else if (result == NSFileHandlingPanelCancelButton) {
+             [_textView insertText:[self timestampStringWithString:@"模板文件选择已取消"]];
+         }
+     }];
+}
+
+- (IBAction)onCreateDataButtonAction:(id)sender
+{
+    if (_originFileUrl == nil) {
+        [_textView insertText:[self timestampStringWithString:@"请先选择数据文件！"]];
+        return;
+    }
     
+    NSArray  *attendanceArr = [self readFile];
+    if (attendanceArr.count == 0) {
+        [_textView insertText:[self timestampStringWithString:@"数据文件内容为空！"]];
+        return;
+    } else {
+        [_textView insertText:[self timestampStringWithString:@"数据文件读取成功！"]];
+    }
+    
+    [_textView insertText:[self timestampStringWithString:@"开始格式化数据"]];
     [self formatAttendanceStatus:attendanceArr];
+    [_textView insertText:[self timestampStringWithString:@"格式化数据成功！"]];
     
     BOOL result = NO;
     result = [self writeToCSVFile:attendanceArr];
     if (!result) {
         NSLog(@"write to file error.");
+        [_textView insertText:[self timestampStringWithString:@"生成表格数据失败！"]];
+    } else {
+        [_textView insertText:[self timestampStringWithString:@"生成表格数据成功！"]];
+        [_textView insertText:[self timestampStringWithString:[NSString stringWithFormat:@"表格数据文件路径：%@",EXPORT_PATH]]];
     }
+}
+
+- (NSString *)timestampStringWithString:(NSString *)string
+{
+    NSDateFormatter *format = [[NSDateFormatter alloc] init];
+    [format setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
+    NSString *dateString = [NSString stringWithFormat:@"%@    %@\n",[format stringFromDate:[NSDate date]],string];
+    
+    return dateString;
 }
 
 - (NSArray *)readFile
 {
-    NSString *path = @"/Users/wangzz/Desktop/502.txt";
     NSError *err = nil;
-    NSString *contents = [[NSString alloc] initWithContentsOfFile:path
-                                                         encoding:NSUTF16StringEncoding
-                                                            error:&err];
+    NSString *contents = [[NSString alloc] initWithContentsOfURL:_originFileUrl
+                                              encoding:NSUTF16StringEncoding
+                                                 error:&err];
+    if (err) {
+        [_textView insertText:[self timestampStringWithString:err.description]];
+        return nil;
+    }
+    
     NSArray *contentsArray = [contents componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
     
     NSMutableArray  *attendanceArr = [NSMutableArray array];
@@ -129,12 +210,15 @@
 
 - (BOOL)writeToCSVFile:(NSArray *)arr
 {
-    NSString *path = @"/Users/wangzz/Desktop/detail.txt";
-    NSString *result = @"/Users/wangzz/Desktop/detail_result.csv";
     NSError *err = nil;
-    NSMutableData *attendanceData = [NSMutableData dataWithContentsOfFile:path options:NSDataReadingMappedIfSafe error:&err];
+    NSMutableData *attendanceData = [NSMutableData dataWithContentsOfURL:_exportFileUrl options:NSDataReadingMappedIfSafe error:&err];
     if (err) {
         NSLog(@"read file err:%@",err);
+        [_textView insertText:[self timestampStringWithString:@"模板文件读取失败！"]];
+        [_textView insertText:[self timestampStringWithString:err.description]];
+        return NO;
+    } else {
+        [_textView insertText:[self timestampStringWithString:@"模板文件读取成功！"]];
     }
     
     NSArray *nameResults = [arr valueForKeyPath:@"@distinctUnionOfObjects.name"];
@@ -145,7 +229,7 @@
         [attendanceData appendData:[personRowString dataUsingEncoding:NSUTF16StringEncoding]];
     }
 
-    return [attendanceData writeToFile:result atomically:YES];
+    return [attendanceData writeToFile:EXPORT_PATH atomically:YES];
 }
 
 - (NSString *)rowStringWithPersonName:(NSString *)personName personArr:(NSArray *)personArr
@@ -181,43 +265,6 @@
     return arriveString;
 }
 
-- (NSString *)rowStringWithPerson:(FGPerson *)person
-{
-    NSMutableString *rowString = nil;
-    for (NSInteger row = 1; row <= 2; row++) {
-        if (row == 1) {
-            [rowString appendString:person.name];
-        } else if (row == 2) {
-            [rowString appendString:@"\t"];
-        }
-        
-        for (NSInteger column = 1; column <= 31; column++) {
-            
-            NSArray *dateArr = [person.date componentsSeparatedByString:@"-"];
-            if (dateArr.count != 3) {
-                continue;
-            }
-            
-            if (column == [[dateArr objectAtIndex:2] integerValue]) {
-                if (row == 1) {
-                    [rowString appendString:person.timeArray.firstObject];
-                } else if (row == 2) {
-                    if (person.timeArray.count > 1) {
-                        [rowString appendString:person.timeArray.lastObject];
-                    } else {
-                        [rowString appendString:@"\t"];
-                    }
-                }
-            } else {
-                [rowString appendString:@"\t"];
-            }
-        }
-        [rowString appendString:@"\n"];
-    }
-    
-    return rowString;
-}
-
 - (BOOL)writeToCSVFile2:(NSArray *)arr
 {
     NSString *normalPath = @"/Users/wangzz/Desktop/normal.csv";
@@ -240,8 +287,6 @@
     [normalData writeToFile:normalPath atomically:YES];
     return [unNormalData writeToFile:unNormalPath atomically:YES];
 }
-
-
 
 - (NSComparisonResult)comparisonString1:(NSString *)string1 string2:(NSString *)string2
 {
