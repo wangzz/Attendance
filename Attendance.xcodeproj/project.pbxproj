@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8242CB6919348058002D8B49 /* izp.xlsx in Resources */ = {isa = PBXBuildFile; fileRef = 8242CB6819348058002D8B49 /* izp.xlsx */; };
 		829F4FCB192DA06800F46087 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 829F4FCA192DA06800F46087 /* Cocoa.framework */; };
 		829F4FD5192DA06800F46087 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 829F4FD3192DA06800F46087 /* InfoPlist.strings */; };
 		829F4FD7192DA06800F46087 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 829F4FD6192DA06800F46087 /* main.m */; };
@@ -34,6 +35,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		8242CB6819348058002D8B49 /* izp.xlsx */ = {isa = PBXFileReference; lastKnownFileType = file; path = izp.xlsx; sourceTree = "<group>"; };
 		829F4FC7192DA06800F46087 /* Attendance.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Attendance.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		829F4FCA192DA06800F46087 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		829F4FCD192DA06800F46087 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
@@ -135,6 +137,7 @@
 		829F4FD1192DA06800F46087 /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
+				8242CB6819348058002D8B49 /* izp.xlsx */,
 				829F5002192DCDC000F46087 /* 502.txt */,
 				829F4FD2192DA06800F46087 /* Attendance-Info.plist */,
 				829F4FD3192DA06800F46087 /* InfoPlist.strings */,
@@ -255,6 +258,7 @@
 				829F4FE3192DA06800F46087 /* Images.xcassets in Resources */,
 				829F4FDB192DA06800F46087 /* Credits.rtf in Resources */,
 				829F4FE1192DA06800F46087 /* MainMenu.xib in Resources */,
+				8242CB6919348058002D8B49 /* izp.xlsx in Resources */,
 				829F5003192DCDC000F46087 /* 502.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

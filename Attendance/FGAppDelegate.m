@@ -129,6 +129,97 @@
 
 - (BOOL)writeToCSVFile:(NSArray *)arr
 {
+    NSString *path = @"/Users/wangzz/Desktop/detail.txt";
+    NSString *result = @"/Users/wangzz/Desktop/detail_result.csv";
+    NSError *err = nil;
+    NSMutableData *attendanceData = [NSMutableData dataWithContentsOfFile:path options:NSDataReadingMappedIfSafe error:&err];
+    if (err) {
+        NSLog(@"read file err:%@",err);
+    }
+    
+    NSArray *nameResults = [arr valueForKeyPath:@"@distinctUnionOfObjects.name"];
+    for (NSString *name in nameResults) {
+        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"name == %@",name];
+        NSArray *personArr = [arr filteredArrayUsingPredicate: predicate];
+        NSString *personRowString = [self rowStringWithPersonName:name personArr:personArr];
+        [attendanceData appendData:[personRowString dataUsingEncoding:NSUTF16StringEncoding]];
+    }
+
+    return [attendanceData writeToFile:result atomically:YES];
+}
+
+- (NSString *)rowStringWithPersonName:(NSString *)personName personArr:(NSArray *)personArr
+{
+    NSMutableString *arriveString = [NSMutableString stringWithFormat:@"%@\t",personName];
+    NSMutableString *leveString = [NSMutableString stringWithString:@"\t"];
+    for (int column = 1; column <= 31; column++) {
+        NSString *dateString = [NSString stringWithFormat:@"2014-5-%d",column];
+        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"date == %@",dateString];
+        NSArray *datePersonArr = [personArr filteredArrayUsingPredicate:predicate];
+        if (datePersonArr.count == 0) {
+            [arriveString appendString:@"\t"];
+            [leveString appendString:@"\t"];
+            continue;
+        }
+        
+        if (datePersonArr.count != 1) {
+            continue;
+        }
+        
+        FGPerson *person = datePersonArr.firstObject;
+        [arriveString appendFormat:@"%@\t",person.timeArray.firstObject];
+        
+        if (person.timeArray.count > 1) {
+            [leveString appendFormat:@"%@\t",person.timeArray.lastObject];
+        } else {
+            [leveString appendString:@"\t"];
+        }
+    }
+    
+    [arriveString appendFormat:@"\n%@\n",leveString];
+    
+    return arriveString;
+}
+
+- (NSString *)rowStringWithPerson:(FGPerson *)person
+{
+    NSMutableString *rowString = nil;
+    for (NSInteger row = 1; row <= 2; row++) {
+        if (row == 1) {
+            [rowString appendString:person.name];
+        } else if (row == 2) {
+            [rowString appendString:@"\t"];
+        }
+        
+        for (NSInteger column = 1; column <= 31; column++) {
+            
+            NSArray *dateArr = [person.date componentsSeparatedByString:@"-"];
+            if (dateArr.count != 3) {
+                continue;
+            }
+            
+            if (column == [[dateArr objectAtIndex:2] integerValue]) {
+                if (row == 1) {
+                    [rowString appendString:person.timeArray.firstObject];
+                } else if (row == 2) {
+                    if (person.timeArray.count > 1) {
+                        [rowString appendString:person.timeArray.lastObject];
+                    } else {
+                        [rowString appendString:@"\t"];
+                    }
+                }
+            } else {
+                [rowString appendString:@"\t"];
+            }
+        }
+        [rowString appendString:@"\n"];
+    }
+    
+    return rowString;
+}
+
+- (BOOL)writeToCSVFile2:(NSArray *)arr
+{
     NSString *normalPath = @"/Users/wangzz/Desktop/normal.csv";
     NSString *unNormalPath = @"/Users/wangzz/Desktop/normal_un.csv";
     NSMutableData *normalData = [NSMutableData data];
