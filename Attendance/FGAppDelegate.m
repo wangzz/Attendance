@@ -136,9 +136,29 @@
         NSString *name = [currentContentArr objectAtIndex:2];   //姓名
         NSString *date = [currentContentArr objectAtIndex:3];   //日期
         NSString *time = [currentContentArr objectAtIndex:4];   //打卡时间
+    
+        //小于凌晨5点的，算成前一天的打卡记录
+        NSComparisonResult result = [self comparisonTimeString1:time timeString2:@"05:00"];
+        if (result != NSOrderedDescending) {
+            NSArray *dateSeparatedArr = [date componentsSeparatedByString:@"-"];
+            if (dateSeparatedArr.count != 3) {
+                continue;
+            }
+            
+            int day = [[dateSeparatedArr objectAtIndex:2] intValue] -1;
+            if (day <= 0) {
+                //一个月的第一天凌晨打卡，这种记录不保存
+                continue;
+            }
+            
+            date = [NSString stringWithFormat:@"%@-%@-%d",[dateSeparatedArr objectAtIndex:0],[dateSeparatedArr objectAtIndex:1],day];
+        }
+        
+        //将同一个人、同一天的打卡记录合并成一条记录，打卡时间保存在记录中的timeArray数组中
         NSPredicate *predicate = [NSPredicate predicateWithFormat:@"name == %@ and date == %@",name,date];
         NSArray *personArr = [attendanceArr filteredArrayUsingPredicate: predicate];
         if (personArr && personArr.count == 1) {
+            //如果一天当中多次打卡，则合并成同一条
             FGPerson *person = [personArr objectAtIndex:0];
             NSMutableArray *timeArr = (NSMutableArray *)person.timeArray;
             [timeArr addObject:time];
@@ -161,6 +181,7 @@
     return attendanceArr;
 }
 
+//计算员工每天的考勤
 - (void)formatAttendanceStatus:(NSArray *)arr
 {
     for (id object in arr) {
@@ -178,10 +199,10 @@
         NSString *overTimeString = @"21:00";        //21点之后的有餐补
         
         //早上打卡时间在5点-9点，晚上打卡时间在18：30到21点的属于正常考勤
-        if ([self comparisonString1:firstTime string2:seperateTimeString] == NSOrderedDescending &&
-            [self comparisonString1:firstTime string2:normalComeTimeString] == NSOrderedAscending &&
-            [self comparisonString1:lastTime string2:normalLeveTimeString] == NSOrderedDescending &&
-            [self comparisonString1:lastTime string2:overTimeString] == NSOrderedAscending) {
+        if ([self comparisonTimeString1:firstTime timeString2:seperateTimeString] == NSOrderedDescending &&
+            [self comparisonTimeString1:firstTime timeString2:normalComeTimeString] == NSOrderedAscending &&
+            [self comparisonTimeString1:lastTime timeString2:normalLeveTimeString] == NSOrderedDescending &&
+            [self comparisonTimeString1:lastTime timeString2:overTimeString] == NSOrderedAscending) {
             person.status = FGAttendanceStatusNormal;
             
             person.arriveTime = firstTime;
@@ -202,11 +223,23 @@
         return NSNotFound;
     }
     
-    NSComparisonResult result = [timeArr1.firstObject compare:timeArr2.firstObject];
+
+    NSComparisonResult result = [self comparisonString1:timeArr1.firstObject string2:timeArr2.firstObject];
     if (result != NSOrderedSame) {
         return result;
     } else {
         return [timeArr1.lastObject compare:timeArr2.lastObject];
+    }
+}
+
+- (NSComparisonResult)comparisonString1:(NSString *)string1 string2:(NSString *)string2
+{
+    if ([string1 integerValue] > [string2 integerValue]) {
+        return NSOrderedDescending;
+    } else if ([string1 integerValue] < [string2 integerValue]) {
+        return NSOrderedAscending;
+    } else {
+        return NSOrderedSame;
     }
 }
 
@@ -223,8 +256,14 @@
         [_textView insertText:[self timestampStringWithString:@"模板文件读取成功！"]];
     }
     
-    NSArray *nameResults = [arr valueForKeyPath:@"@distinctUnionOfObjects.name"];
-    for (NSString *name in nameResults) {
+    //按原来的顺序记录考勤人姓名
+    NSMutableOrderedSet *nameResultsSet = [[NSMutableOrderedSet alloc] init];
+    for (FGPerson *person in arr) {
+        [nameResultsSet addObject:person.name];
+    }
+    
+    for (NSUInteger index = 0; index < nameResultsSet.count; index++) {
+        NSString *name = [nameResultsSet objectAtIndex:index];
         NSPredicate *predicate = [NSPredicate predicateWithFormat:@"name == %@",name];
         NSArray *personArr = [arr filteredArrayUsingPredicate: predicate];
         NSString *personRowString = [self rowStringWithPersonName:name personArr:personArr];
@@ -288,17 +327,6 @@
     
     [normalData writeToFile:normalPath atomically:YES];
     return [unNormalData writeToFile:unNormalPath atomically:YES];
-}
-
-- (NSComparisonResult)comparisonString1:(NSString *)string1 string2:(NSString *)string2
-{
-    if ([string1 integerValue] > [string2 integerValue]) {
-        return NSOrderedDescending;
-    } else if ([string1 integerValue] < [string2 integerValue]) {
-        return NSOrderedAscending;
-    } else {
-        return NSOrderedSame;
-    }
 }
 
 - (void)formatAttendanceDaceWith:(NSArray *)arr
