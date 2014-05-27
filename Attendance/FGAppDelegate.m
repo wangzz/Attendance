@@ -75,17 +75,19 @@
         return;
     }
     
+    if (_exportFileUrl == nil) {
+        [_textView insertText:[self timestampStringWithString:@"请先选择模板文件！"]];
+        return;
+    }
+    
     NSArray  *attendanceArr = [self readFile];
     if (attendanceArr.count == 0) {
-        [_textView insertText:[self timestampStringWithString:@"数据文件内容为空！"]];
         return;
     } else {
         [_textView insertText:[self timestampStringWithString:@"数据文件读取成功！"]];
     }
     
-    [_textView insertText:[self timestampStringWithString:@"开始格式化数据"]];
     [self formatAttendanceStatus:attendanceArr];
-    [_textView insertText:[self timestampStringWithString:@"格式化数据成功！"]];
     
     BOOL result = NO;
     result = [self writeToCSVFile:attendanceArr];
