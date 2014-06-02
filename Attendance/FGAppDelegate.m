@@ -133,10 +133,16 @@
             continue;
         }
     
-        NSString *name = [currentContentArr objectAtIndex:2];   //姓名
-        NSString *date = [currentContentArr objectAtIndex:3];   //日期
-        NSString *time = [currentContentArr objectAtIndex:4];   //打卡时间
+        NSString *employeeID = [currentContentArr objectAtIndex:1];   //工号
+        NSString *name = [currentContentArr objectAtIndex:2];       //姓名
+        NSString *date = [currentContentArr objectAtIndex:3];       //日期
+        NSString *time = [currentContentArr objectAtIndex:4];       //打卡时间
     
+        if (employeeID == nil || employeeID.length == 0) {
+            NSLog(@"employeeID is nil,name:%@",name);
+            employeeID = name;      //工号为空的用姓名代替
+        }
+        
         //小于凌晨5点的，算成前一天的打卡记录
         NSComparisonResult result = [self comparisonTimeString1:time timeString2:@"05:00"];
         if (result != NSOrderedDescending) {
@@ -153,9 +159,9 @@
             
             date = [NSString stringWithFormat:@"%@-%@-%d",[dateSeparatedArr objectAtIndex:0],[dateSeparatedArr objectAtIndex:1],day];
         }
-        
+
         //将同一个人、同一天的打卡记录合并成一条记录，打卡时间保存在记录中的timeArray数组中
-        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"name == %@ and date == %@",name,date];
+        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"employeeID == %@ and name == %@ and date == %@",employeeID,name,date];
         NSArray *personArr = [attendanceArr filteredArrayUsingPredicate: predicate];
         if (personArr && personArr.count == 1) {
             //如果一天当中多次打卡，则合并成同一条
@@ -165,13 +171,13 @@
         } else {
             FGPerson *person = [[FGPerson alloc] init];
             person.ID = [currentContentArr objectAtIndex:0];
-            person.employeeID = [currentContentArr objectAtIndex:1];
+            person.employeeID = employeeID;
             person.name = name;
             person.date = date;
             person.timeArray = [NSMutableArray arrayWithObject:time];
             
             if (person.name == nil || person.name.length == 0) {
-//                NSLog(@"err");
+                NSLog(@"err");
             } else {
                 [attendanceArr addObject:person];
             }
